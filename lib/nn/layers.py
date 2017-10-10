@@ -1,3 +1,5 @@
+import theano.tensor as T
+
 from lasagne.layers import Layer
 from lasagne.init import Uniform, Constant
 

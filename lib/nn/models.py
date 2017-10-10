@@ -1,16 +1,38 @@
+from numpy import float32
+
+import theano.sandbox.cuda
+theano.sandbox.cuda.use('gpu0')
+import theano
+import theano.tensor as T
+
 from lasagne.layers import InputLayer, ReshapeLayer, NonlinearityLayer, ExpressionLayer
 from lasagne.layers import ElemwiseSumLayer, ElemwiseMergeLayer
-from lasagne.lasagne import DenseLayer
+from lasagne.layers import DenseLayer
 from lasagne.layers.dnn import BatchNormDNNLayer
 from lasagne.nonlinearities import rectify, softmax
+
+from lasagne.layers import get_output, get_all_params
+from lasagne.regularization import regularize_network_params, l2
+from lasagne.objectives import categorical_crossentropy, categorical_accuracy
+from lasagne.updates import adam
 
 from lib.nn.layers import SharedDotLayer, SPTNormReshapeLayer
 
 
-def build_classification_model(clouds, norms, config):
-    steps = config.get('steps')
-    n_f = config.get('n_f')
-    features = config.get('input_features')
+def build_classification_network(config):
+    steps = config.get('steps', 10)
+    features = config.get('input_features', 'all')
+    n_f = config.get('n_f', [16, 32, 32, 64, 64, 128, 128, 256, 256, 512, 128])
+    n_output = config.get('n_output', 10)
+    l2_reg = config.get('l2_regularization', 1e-3)
+    learning_rate = config.get('learning_rate', 1e-3)
+
+    
+    clouds = T.tensor3(dtype='float32')
+    norms = [T.tensor3(dtype='float32') for step in xrange(steps)]
+    target = T.vector(dtype='int32')
+    
+    lr = theano.shared(float32(learning_rate))
 
     KDNet = {}
     if features == 'no':
@@ -19,7 +41,7 @@ def build_classification_model(clouds, norms, config):
         KDNet['input'] = InputLayer((None, 3, 2**steps), input_var=clouds)
 
     for i in xrange(steps):
-        KDNet['norm{}_r'.format(i+1)] = InputLayer((None, 3, 2**(c_steps-1-i)), input_var=norms[i])
+        KDNet['norm{}_r'.format(i+1)] = InputLayer((None, 3, 2**(steps-1-i)), input_var=norms[i])
         KDNet['norm{}_l'.format(i+1)] = ExpressionLayer(KDNet['norm{}_r'.format(i+1)], lambda X: -X)
 
         KDNet['norm{}_l_X-'.format(i+1)] = SPTNormReshapeLayer(KDNet['norm{}_l'.format(i+1)], '-', 0, n_f[i+1])
@@ -123,6 +145,20 @@ def build_classification_model(clouds, norms, config):
     KDNet['cloud_fin_bn'] = BatchNormDNNLayer(KDNet['cloud_fin'])
     KDNet['cloud_fin_relu'] = NonlinearityLayer(KDNet['cloud_fin_bn'], rectify)
     KDNet['cloud_fin_reshape'] = ReshapeLayer(KDNet['cloud_fin_relu'], (-1, n_f[-1]))
-    KDNet['output'] = DenseLayer(KDNet['cloud_fin_reshape'], 10, nonlinearity=softmax)
+    KDNet['output'] = DenseLayer(KDNet['cloud_fin_reshape'], n_output, nonlinearity=softmax)
 
-    return KDNet
+    prob = get_output(KDNet['output'])
+    prob_det = get_output(KDNet['output'], deterministic=True)
+    
+    weights = get_all_params(KDNet['output'], trainable=True)
+    l2_pen = regularize_network_params(KDNet['output'], l2)
+    
+    loss = categorical_crossentropy(prob, target).mean() + l2_reg*l2_pen
+    accuracy = categorical_accuracy(prob, target).mean()
+    
+    updates = adam(loss, weights, learning_rate=lr)
+    
+    train_fun = theano.function([clouds] + norms + [target], [loss, accuracy], updates=updates)
+    prob_fun = theano.function([clouds] + norms, prob_det)
+    
+    return train_fun, prob_fun, KDNet, lr
