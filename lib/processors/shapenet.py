@@ -67,19 +67,19 @@ def prepare(path2data, path2save, pose='normal'):
 
     train_nFaces = hf.create_dataset('train_nFaces', (1 + len(train_filenames),), dtype=np.int32)
     train_faces = hf.create_dataset('train_faces', (train_faces_cnt, 3), dtype=np.int32)
-    train_vertices = hf.create_dataset('train_vertices', (train_vertices_cnt, 3), dtype=np.float16)
+    train_vertices = hf.create_dataset('train_vertices', (train_vertices_cnt, 3), dtype=np.float32)
     train_labels = hf.create_dataset('train_labels', (len(train_filenames),), dtype=np.int8)
     train_sublabels = hf.create_dataset('train_sublabels', (len(train_filenames),), dtype=np.int8)
 
     val_nFaces = hf.create_dataset('val_nFaces', (1 + len(val_filenames),), dtype=np.int32)
     val_faces = hf.create_dataset('val_faces', (val_faces_cnt, 3), dtype=np.int32)
-    val_vertices = hf.create_dataset('val_vertices', (val_vertices_cnt, 3), dtype=np.float16)
+    val_vertices = hf.create_dataset('val_vertices', (val_vertices_cnt, 3), dtype=np.float32)
     val_labels = hf.create_dataset('val_labels', (len(val_filenames),), dtype=np.int8)
     val_sublabels = hf.create_dataset('val_sublabels', (len(val_filenames),), dtype=np.int8)
 
     test_nFaces = hf.create_dataset('test_nFaces', (1 + len(test_filenames),), dtype=np.int32)
     test_faces = hf.create_dataset('test_faces', (test_faces_cnt, 3), dtype=np.int32)
-    test_vertices = hf.create_dataset('test_vertices', (test_vertices_cnt, 3), dtype=np.float16)
+    test_vertices = hf.create_dataset('test_vertices', (test_vertices_cnt, 3), dtype=np.float32)
     
     train_nFaces[0] = 0
     val_nFaces[0] = 0
@@ -95,7 +95,7 @@ def prepare(path2data, path2save, pose='normal'):
             for j, line in enumerate(fobj):
                 tmp = line.split(' ')
                 if tmp[0] == 'v':
-                    shape_vertices.append(list(map(np.float16, tmp[1:])))
+                    shape_vertices.append(list(map(np.float32, tmp[1:])))
                 elif tmp[0] == 'f':
                     shape_faces.append(list(map(lambda x: np.int32(x.split('/')[0]), tmp[1:])))
 
@@ -127,7 +127,7 @@ def prepare(path2data, path2save, pose='normal'):
             for j, line in enumerate(fobj):
                 tmp = line.split(' ')
                 if tmp[0] == 'v':
-                    shape_vertices.append(list(map(np.float16, tmp[1:])))
+                    shape_vertices.append(list(map(np.float32, tmp[1:])))
                 elif tmp[0] == 'f':
                     shape_faces.append(list(map(lambda x: np.int32(x.split('/')[0]), tmp[1:])))
 
@@ -159,7 +159,7 @@ def prepare(path2data, path2save, pose='normal'):
             for j, line in enumerate(fobj):
                 tmp = line.split(' ')
                 if tmp[0] == 'v':
-                    shape_vertices.append(list(map(np.float16, tmp[1:])))
+                    shape_vertices.append(list(map(np.float32, tmp[1:])))
                 elif tmp[0] == 'f':
                     shape_faces.append(list(map(lambda x: np.int32(x.split('/')[0]), tmp[1:])))
 
@@ -180,5 +180,5 @@ def prepare(path2data, path2save, pose='normal'):
         faces_pos += faces_offset
 
     hf.close()
-    print('\nData in ' + path2data + ' ('+ pose + ') ' + 'is processed and saved to ' + path2save + '/shapenet_' + pose + '.h5')
+    print('\nData is processed and saved to ' + path2save + '/shapenet_' + pose + '.h5')
     

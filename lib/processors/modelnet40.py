@@ -7,12 +7,12 @@ import h5py as h5
 def prepare(path2data, path2save):
     train_nFaces = np.zeros((1,), dtype=np.int32)
     train_faces = np.empty((0, 3), dtype=np.int32)
-    train_vertices = np.empty((0, 3), dtype=np.float16)
+    train_vertices = np.empty((0, 3), dtype=np.float32)
     train_labels = np.empty((0,), dtype=np.int8)
 
     test_nFaces = np.zeros((1,), dtype=np.int32)
     test_faces = np.empty((0, 3), dtype=np.int32)
-    test_vertices = np.empty((0, 3), dtype=np.float16)
+    test_vertices = np.empty((0, 3), dtype=np.float32)
     test_labels = np.empty((0,), dtype=np.int8)
 
     classes = sorted(os.listdir(path2data))
@@ -34,9 +34,9 @@ def prepare(path2data, path2save):
                         numVertices, numFaces, numEdges = map(np.int32, line.split())
                         break
 
-                vrtcs = np.empty((numVertices, 3), dtype=np.float16)
+                vrtcs = np.empty((numVertices, 3), dtype=np.float32)
                 for k, line in enumerate(fobj):
-                    vrtcs[k] = map(np.float16, line.split())
+                    vrtcs[k] = map(np.float32, line.split())
                     if k == numVertices - 1:
                         break
 
@@ -61,9 +61,9 @@ def prepare(path2data, path2save):
                         numVertices, numFaces, numEdges = map(np.int32, line.split())
                         break
 
-                vrtcs = np.empty((numVertices, 3), dtype=np.float16)
+                vrtcs = np.empty((numVertices, 3), dtype=np.float32)
                 for k, line in enumerate(fobj):
-                    vrtcs[k] = map(np.float16, line.split())
+                    vrtcs[k] = map(np.float32, line.split())
                     if k == numVertices - 1:
                         break
 
@@ -90,7 +90,7 @@ def prepare(path2data, path2save):
         hf.create_dataset('test_vertices', data=test_vertices)
         hf.create_dataset('test_labels', data=test_labels)
 
-    print('\nData in ' + path2data + ' is processed and saved to ' + path2save + '/modelnet40.h5')
+    print('\nData is processed and saved to ' + path2save + '/modelnet40.h5')
     print('\nclass2label = {')
     for i, cl in enumerate(sorted(class2label.keys())):
         print('    "{}": {}'.format(cl, class2label[cl]) + (',' if i+1 < len(class2label) else ''))
